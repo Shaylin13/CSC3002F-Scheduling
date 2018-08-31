@@ -1,0 +1,108 @@
+Scheduling.txt
+Convoy Effect - PDYSHA009
+
+//------------------------------convoy effect-----------------------------------------------
+To create a workload that demonstrates the convoy effect the following programs were created:
+
+IOBound)
+
+CPU 353     ----small CPU bursts
+IO 1192 4
+CPU 153
+IO 1463 4
+CPU 102
+IO 838 2
+CPU 199
+
+IOBound2
+
+CPU 43
+IO 250 1
+CPU 35
+IO 322 3
+CPU 37
+IO 511 4
+CPU 34
+
+IO-CPUBound)
+
+CPU 353
+IO 1192 4
+CPU 153
+IO 1463 4
+CPU 1200    ----large CPU burst
+IO 200 2
+CPU 1245    ----Large CPU burst
+
+The following trace is produced:
+Time: 0000000001 Kernel: Context Switch {Idle}, process(pid=1, state=READY, name="Test2C/IOBound.prg")).
+Time: 0000000360 Kernel: Context Switch process(pid=1, state=WAITING, name="Test2C/IOBound.prg"), process(pid=2, state=READY, name="Test2C/IO-CPUBound.prg")).
+Time: 0000000717 Kernel: Context Switch process(pid=2, state=WAITING, name="Test2C/IO-CPUBound.prg"), process(pid=3, state=READY, name="Test2C/IOBound2.prg")).
+Time: 0000000764 Kernel: Context Switch process(pid=3, state=WAITING, name="Test2C/IOBound2.prg"), {Idle}).
+Time: 0000001015 Kernel: Context Switch {Idle}, process(pid=3, state=READY, name="Test2C/IOBound2.prg")).
+Time: 0000001054 Kernel: Context Switch process(pid=3, state=WAITING, name="Test2C/IOBound2.prg"), {Idle}).
+Time: 0000001377 Kernel: Context Switch {Idle}, process(pid=3, state=READY, name="Test2C/IOBound2.prg")).
+Time: 0000001418 Kernel: Context Switch process(pid=3, state=WAITING, name="Test2C/IOBound2.prg"), {Idle}).
+Time: 0000001553 Kernel: Context Switch {Idle}, process(pid=1, state=READY, name="Test2C/IOBound.prg")).
+Time: 0000001710 Kernel: Context Switch process(pid=1, state=WAITING, name="Test2C/IOBound.prg"), {Idle}).
+Time: 0000002745 Kernel: Context Switch {Idle}, process(pid=2, state=READY, name="Test2C/IO-CPUBound.prg")).
+Time: 0000002902 Kernel: Context Switch process(pid=2, state=WAITING, name="Test2C/IO-CPUBound.prg"), {Idle}).
+Time: 0000003256 Kernel: Context Switch {Idle}, process(pid=3, state=READY, name="Test2C/IOBound2.prg")).
+Time: 0000003294 Kernel: Context Switch process(pid=3, state=TERMINATED, name="Test2C/IOBound2.prg"), {Idle}).
+Time: 0000004719 Kernel: Context Switch {Idle}, process(pid=1, state=READY, name="Test2C/IOBound.prg")).
+Time: 0000004825 Kernel: Context Switch process(pid=1, state=WAITING, name="Test2C/IOBound.prg"), {Idle}).
+Time: 0000005664 Kernel: Context Switch {Idle}, process(pid=1, state=READY, name="Test2C/IOBound.prg")).
+Time: 0000005867 Kernel: Context Switch process(pid=1, state=TERMINATED, name="Test2C/IOBound.prg"), {Idle}).
+Time: 0000006182 Kernel: Context Switch {Idle}, process(pid=2, state=READY, name="Test2C/IO-CPUBound.prg")).
+Time: 0000007386 Kernel: Context Switch process(pid=2, state=WAITING, name="Test2C/IO-CPUBound.prg"), {Idle}).
+Time: 0000007587 Kernel: Context Switch {Idle}, process(pid=2, state=READY, name="Test2C/IO-CPUBound.prg")).
+Time: 0000008836 Kernel: Context Switch process(pid=2, state=TERMINATED, name="Test2C/IO-CPUBound.prg"), {Idle}).
+
+
+Question 2)
+
+The first 2 programs are IO bound programs that have relatively small CPU burst with respect to IO,
+the third program IO-CPUBound starts off being IO bound but then shifts to being CPU bound.
+This is where the convoy effect takes place as the CPU is taken up by the large CPU burst time and the
+IO bound processes have to wait for the CPU itensive process to complete.
+(paying attention to the last 2 lines)
+when the CPU intensive process ends the IO bound processes get their required CPU time and return to the queue but
+they must now wait because the CPU intensive process is still accessing an IO device which results in a Idle CPU.
+
+
+//----------------------------Round Robin------------------------------------------------------------------------
+//----------------------------80% Rule of Thumb------------------------------------------------------------------
+The work load for these test can be found in the TestThumb folder
+The rule of thumb requires that 80% of CPU bursts are shorter than the timeslice
+
+To demonstrate this I create multiple programs which are IO bound, CPU bound and Balance/mixed betweem IO and CPU bound.
+To show the effect of the time slice the mixed load was tested with multiple time-slice sizes.
+80% of the CPU bursts are shorter than 10 000
+
+test 1) slice size 9000 --------here less than 80% smaller than slice
+System time: 105828
+Kernel time: 137
+User time: 93449
+Idle time: 12242
+Context switches: 31
+CPU utilization: 88.30
+
+test2) slice size 10 000 -------here 80% are smaller than the slice
+System time: 116132
+Kernel time: 124
+User time: 93449
+Idle time: 22559
+Context switches: 28
+CPU utilization: 80.47
+
+test3) slice size 11 000 ------here the slice is bigger than all
+System time: 100056
+Kernel time: 96
+User time: 93449
+Idle time: 6511
+Context switches: 20
+CPU utilization: 93.40
+
+
+Using only this set of programs has the optimum reached when 10000 time slice was used.
+
